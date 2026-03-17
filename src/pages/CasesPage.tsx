@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { HiOutlineDownload, HiOutlineEye } from "react-icons/hi";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { HiOutlineDownload, HiOutlineEye, HiOutlineUpload, HiOutlineDocumentReport } from "react-icons/hi";
 import { fetchAllCases, downloadReport } from "../api/cases";
+import { generateReport } from "../api/reports";
 import { formatTimeRemaining, calculateTatStatus } from "@coanfiss/coverify-shared";
+import { CsvImporter } from "../components/CsvImporter";
 
 const STATUS_STYLES: Record<string, string> = {
   assigned: "bg-blue-100 text-blue-700",
@@ -20,9 +22,18 @@ const TAT_STYLES = {
 };
 
 export function CasesPage() {
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [showImporter, setShowImporter] = useState(false);
+
+  const generateMutation = useMutation({
+    mutationFn: (caseId: string) => generateReport(caseId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
 
   const { data } = useQuery({
     queryKey: ["admin-cases", statusFilter, search, page],
@@ -50,8 +61,20 @@ export function CasesPage() {
     }
   };
 
+  const handleGenerateReport = (caseId: string) => {
+    generateMutation.mutate(caseId);
+  };
+
   return (
     <div className="space-y-4">
+      <CsvImporter
+        visible={showImporter}
+        onClose={() => setShowImporter(false)}
+        onImportComplete={() => {
+          void queryClient.invalidateQueries({ queryKey: ["admin-cases"] });
+        }}
+      />
+
       {/* Filters */}
       <div className="flex items-center gap-4">
         <input
@@ -74,6 +97,13 @@ export function CasesPage() {
           <option value="approved">Approved</option>
           <option value="rejected">Rejected</option>
         </select>
+        <button
+          onClick={() => setShowImporter(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"
+        >
+          <HiOutlineUpload size={16} />
+          Bulk Import
+        </button>
       </div>
 
       {/* Table */}
@@ -120,6 +150,14 @@ export function CasesPage() {
                         onClick={() => handleDownload(c.id)}
                       >
                         <HiOutlineDownload size={18} />
+                      </button>
+                      <button
+                        className="p-1 text-gray-400 hover:text-purple-600"
+                        title="Generate Report"
+                        onClick={() => handleGenerateReport(c.id)}
+                        disabled={generateMutation.isPending}
+                      >
+                        <HiOutlineDocumentReport size={18} />
                       </button>
                     </div>
                   </td>

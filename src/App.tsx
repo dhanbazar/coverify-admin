@@ -10,6 +10,7 @@ import { AgentsPage } from "./pages/AgentsPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { LiveMapPage } from "./pages/LiveMapPage";
+import { AuditLogPage } from "./pages/AuditLogPage";
 import "./index.css";
 
 const queryClient = new QueryClient({
@@ -27,6 +28,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/agents": "Agent Management",
   "/live-map": "Live Agent Map",
   "/reports": "Reports",
+  "/audit-log": "Audit Log",
   "/settings": "Settings",
 };
 
@@ -78,6 +80,8 @@ function App() {
         return <LiveMapPage />;
       case "/reports":
         return <ReportsPage />;
+      case "/audit-log":
+        return <AuditLogPage />;
       case "/settings":
         return <SettingsPage />;
       default:

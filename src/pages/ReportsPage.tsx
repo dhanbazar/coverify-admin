@@ -1,112 +1,150 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   HiOutlineDownload,
   HiOutlineDocumentReport,
-  HiOutlineEye,
+  HiOutlineRefresh,
+  HiOutlineClipboardCopy,
+  HiOutlineSearch,
 } from "react-icons/hi";
-
-interface ReportItem {
-  id: string;
-  caseId: string;
-  clientName: string;
-  applicantName: string;
-  reportType: string;
-  status: string;
-  generatedAt: string;
-  pageCount: number;
-}
+import { fetchReports, generateReport, getReportDownloadUrl } from "../api/reports";
+import type { ReportMeta } from "../api/reports";
 
 const STATUS_STYLES: Record<string, string> = {
-  Positive: "bg-green-100 text-green-700",
-  Negative: "bg-red-100 text-red-700",
-  "Refer to Credit": "bg-amber-100 text-amber-700",
+  generated: "bg-green-100 text-green-700",
+  pending: "bg-amber-100 text-amber-700",
+  failed: "bg-red-100 text-red-700",
 };
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function truncateHash(hash: string): string {
+  if (!hash) return "-";
+  return `${hash.slice(0, 8)}...${hash.slice(-8)}`;
+}
+
 export function ReportsPage() {
-  const [typeFilter, setTypeFilter] = useState("");
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [generateCaseId, setGenerateCaseId] = useState("");
+  const [copiedHash, setCopiedHash] = useState<string | null>(null);
+  const limit = 20;
 
-  // Mock data — wired to API when report generation is complete
-  const mockReports: ReportItem[] = [
-    {
-      id: "1",
-      caseId: "CV-2026-00001",
-      clientName: "HDFC Bank",
-      applicantName: "Rajesh Patel",
-      reportType: "PD",
-      status: "Positive",
-      generatedAt: "2026-03-16T14:30:00Z",
-      pageCount: 8,
-    },
-    {
-      id: "2",
-      caseId: "CV-2026-00003",
-      clientName: "ICICI Bank",
-      applicantName: "Priya Sharma",
-      reportType: "FI_CPV",
-      status: "Negative",
-      generatedAt: "2026-03-15T11:20:00Z",
-      pageCount: 6,
-    },
-    {
-      id: "3",
-      caseId: "CV-2026-00005",
-      clientName: "Bajaj Finance",
-      applicantName: "Amit Desai",
-      reportType: "PD",
-      status: "Refer to Credit",
-      generatedAt: "2026-03-14T09:45:00Z",
-      pageCount: 10,
-    },
-    {
-      id: "4",
-      caseId: "CV-2026-00008",
-      clientName: "Axis Bank",
-      applicantName: "Sneha Mehta",
-      reportType: "FI_CPV",
-      status: "Positive",
-      generatedAt: "2026-03-13T16:10:00Z",
-      pageCount: 5,
-    },
-  ];
-
-  const filtered = mockReports.filter((r) => {
-    if (typeFilter && r.reportType !== typeFilter) return false;
-    if (search) {
-      const s = search.toLowerCase();
-      return (
-        r.caseId.toLowerCase().includes(s) ||
-        r.applicantName.toLowerCase().includes(s) ||
-        r.clientName.toLowerCase().includes(s)
-      );
-    }
-    return true;
+  const { data, isLoading } = useQuery({
+    queryKey: ["reports", search, statusFilter, page],
+    queryFn: () =>
+      fetchReports({
+        page,
+        limit,
+        status: statusFilter || undefined,
+        search: search || undefined,
+      }),
   });
 
-  const handleDownload = (_reportId: string, caseId: string) => {
-    alert(`PDF download for ${caseId} not yet available — report generation is in Phase 4`);
+  const reports = data?.reports ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.ceil(total / limit);
+
+  const generateMutation = useMutation({
+    mutationFn: (caseId: string) => generateReport(caseId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["reports"] });
+      setGenerateCaseId("");
+    },
+  });
+
+  const handleDownload = async (report: ReportMeta) => {
+    try {
+      const url = await getReportDownloadUrl(report.case_id);
+      window.open(url, "_blank");
+    } catch {
+      alert("Failed to get download URL");
+    }
+  };
+
+  const handleCopyHash = (hash: string) => {
+    void navigator.clipboard.writeText(hash);
+    setCopiedHash(hash);
+    setTimeout(() => setCopiedHash(null), 2000);
+  };
+
+  const handleGenerate = () => {
+    const caseId = generateCaseId.trim();
+    if (!caseId) return;
+    generateMutation.mutate(caseId);
   };
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
+      {/* Generate Report + Search */}
       <div className="flex items-center gap-4">
-        <input
-          type="text"
-          placeholder="Search by case ID, applicant, or client..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        />
+        <div className="relative flex-1">
+          <HiOutlineSearch
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+            size={16}
+          />
+          <input
+            type="text"
+            placeholder="Search by case ID..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
         <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
           className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
-          <option value="">All Types</option>
-          <option value="PD">PD Report</option>
-          <option value="FI_CPV">FI/CPV Report</option>
+          <option value="">All Statuses</option>
+          <option value="generated">Generated</option>
+          <option value="pending">Pending</option>
+          <option value="failed">Failed</option>
         </select>
+      </div>
+
+      {/* Generate Report Section */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Generate Report</h3>
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Enter Case ID (e.g. CV-2026-00001)"
+            value={generateCaseId}
+            onChange={(e) => setGenerateCaseId(e.target.value)}
+            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <button
+            onClick={handleGenerate}
+            disabled={generateMutation.isPending || !generateCaseId.trim()}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <HiOutlineDocumentReport size={16} />
+            {generateMutation.isPending ? "Generating..." : "Generate PDF"}
+          </button>
+        </div>
+        {generateMutation.isError && (
+          <p className="text-sm text-red-600 mt-2">
+            Failed to generate report. Please check the case ID and try again.
+          </p>
+        )}
+        {generateMutation.isSuccess && (
+          <p className="text-sm text-green-600 mt-2">
+            Report generation initiated successfully.
+          </p>
+        )}
       </div>
 
       {/* Summary Cards */}
@@ -117,7 +155,7 @@ export function ReportsPage() {
               <HiOutlineDocumentReport className="text-indigo-600" size={20} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{mockReports.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{total}</p>
               <p className="text-sm text-gray-500">Total Reports</p>
             </div>
           </div>
@@ -129,22 +167,22 @@ export function ReportsPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-green-600">
-                {mockReports.filter((r) => r.status === "Positive").length}
+                {reports.filter((r) => r.status === "generated").length}
               </p>
-              <p className="text-sm text-gray-500">Positive</p>
+              <p className="text-sm text-gray-500">Generated</p>
             </div>
           </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
-              <HiOutlineDocumentReport className="text-red-600" size={20} />
+            <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center">
+              <HiOutlineRefresh className="text-amber-600" size={20} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-red-600">
-                {mockReports.filter((r) => r.status === "Negative").length}
+              <p className="text-2xl font-bold text-amber-600">
+                {reports.filter((r) => r.status === "pending").length}
               </p>
-              <p className="text-sm text-gray-500">Negative</p>
+              <p className="text-sm text-gray-500">Pending</p>
             </div>
           </div>
         </div>
@@ -152,68 +190,142 @@ export function ReportsPage() {
 
       {/* Reports Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Case ID</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Applicant</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Client</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Type</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Generated</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Pages</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filtered.map((r) => (
-              <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 text-sm font-medium text-indigo-600">{r.caseId}</td>
-                <td className="px-4 py-3 text-sm text-gray-900">{r.applicantName}</td>
-                <td className="px-4 py-3 text-sm text-gray-600">{r.clientName}</td>
-                <td className="px-4 py-3">
-                  <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                    {r.reportType === "PD" ? "PD Report" : "FI/CPV"}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[r.status] ?? "bg-gray-100 text-gray-700"}`}>
-                    {r.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600">
-                  {new Date(r.generatedAt).toLocaleDateString("en-IN", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600">{r.pageCount}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <button className="p-1 text-gray-400 hover:text-indigo-600" title="View">
-                      <HiOutlineEye size={18} />
-                    </button>
+        {isLoading ? (
+          <div className="p-8 text-center text-gray-400">Loading reports...</div>
+        ) : (
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  Case ID
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  Applicant
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  Type
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  Status
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  Size
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  Generated By
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  Date
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  SHA-256
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {reports.map((r) => (
+                <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 text-sm font-medium text-indigo-600">
+                    {r.case_display_id ?? r.case_id}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900">
+                    {r.applicant_name ?? "-"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                      {r.type}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[r.status] ?? "bg-gray-100 text-gray-700"}`}
+                    >
+                      {r.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {r.file_size_bytes ? formatFileSize(r.file_size_bytes) : "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {r.generator_name ?? r.generated_by}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {new Date(r.created_at).toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </td>
+                  <td className="px-4 py-3">
+                    {r.sha256_hash ? (
+                      <button
+                        onClick={() => handleCopyHash(r.sha256_hash)}
+                        className="flex items-center gap-1 text-xs text-gray-500 hover:text-indigo-600 font-mono"
+                        title="Click to copy full hash"
+                      >
+                        {truncateHash(r.sha256_hash)}
+                        <HiOutlineClipboardCopy size={14} />
+                        {copiedHash === r.sha256_hash && (
+                          <span className="text-green-600 ml-1">Copied!</span>
+                        )}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-400">-</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
                     <button
-                      className="p-1 text-gray-400 hover:text-green-600"
+                      className="p-1 text-gray-400 hover:text-green-600 disabled:opacity-30"
                       title="Download PDF"
-                      onClick={() => handleDownload(r.id, r.caseId)}
+                      disabled={r.status !== "generated"}
+                      onClick={() => void handleDownload(r)}
                     >
                       <HiOutlineDownload size={18} />
                     </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
-        {filtered.length === 0 && (
+        {!isLoading && reports.length === 0 && (
           <div className="p-8 text-center text-gray-400">
             No reports found matching your filters.
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between text-sm text-gray-500">
+          <span>
+            Showing {(page - 1) * limit + 1}-{Math.min(page * limit, total)} of {total} reports
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page === 1}
+              className="px-3 py-1 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="px-3 py-1 text-gray-700">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
