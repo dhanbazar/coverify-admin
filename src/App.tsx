@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { getStoredAuth } from "./store/authStore";
+import { connectWebSocket, disconnectWebSocket } from "./services/websocket";
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -8,6 +9,7 @@ import { CasesPage } from "./pages/CasesPage";
 import { AgentsPage } from "./pages/AgentsPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { LiveMapPage } from "./pages/LiveMapPage";
 import "./index.css";
 
 const queryClient = new QueryClient({
@@ -23,6 +25,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/": "Dashboard",
   "/cases": "Case Management",
   "/agents": "Agent Management",
+  "/live-map": "Live Agent Map",
   "/reports": "Reports",
   "/settings": "Settings",
 };
@@ -37,6 +40,23 @@ function App() {
     const auth = getStoredAuth();
     setIsAuthenticated(auth.isAuthenticated);
   }, []);
+
+  // WebSocket lifecycle: connect on auth, disconnect on logout
+  useEffect(() => {
+    if (isAuthenticated) {
+      try {
+        connectWebSocket();
+      } catch {
+        // Auth token may not be available yet, WebSocket will connect later
+      }
+    } else {
+      disconnectWebSocket();
+    }
+
+    return () => {
+      disconnectWebSocket();
+    };
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return (
@@ -54,6 +74,8 @@ function App() {
         return <CasesPage />;
       case "/agents":
         return <AgentsPage />;
+      case "/live-map":
+        return <LiveMapPage />;
       case "/reports":
         return <ReportsPage />;
       case "/settings":

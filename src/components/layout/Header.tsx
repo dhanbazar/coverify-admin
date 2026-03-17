@@ -1,5 +1,9 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { HiOutlineBell, HiOutlineSearch } from "react-icons/hi";
 import { getStoredAuth } from "../../store/authStore";
+import { getUnreadCount } from "../../api/notifications";
+import { NotificationPanel } from "../NotificationPanel";
 
 interface HeaderProps {
   title: string;
@@ -7,6 +11,13 @@ interface HeaderProps {
 
 export function Header({ title }: HeaderProps) {
   const { user } = getStoredAuth();
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  const { data: unreadCount } = useQuery({
+    queryKey: ["unread-count"],
+    queryFn: getUnreadCount,
+    refetchInterval: 30000,
+  });
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
@@ -24,10 +35,20 @@ export function Header({ title }: HeaderProps) {
         </div>
 
         {/* Notifications */}
-        <button className="relative p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
-          <HiOutlineBell size={20} />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setNotifOpen((v) => !v)}
+            className="relative p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+          >
+            <HiOutlineBell size={20} />
+            {(unreadCount ?? 0) > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1">
+                {unreadCount! > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </button>
+          <NotificationPanel open={notifOpen} onClose={() => setNotifOpen(false)} />
+        </div>
 
         {/* User */}
         <div className="flex items-center gap-2">
