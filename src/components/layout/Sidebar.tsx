@@ -10,6 +10,7 @@ import {
   HiOutlineChevronRight,
   HiOutlineLocationMarker,
   HiOutlineShieldCheck,
+  HiOutlineDownload,
 } from "react-icons/hi";
 import { clearStoredAuth } from "../../store/authStore";
 
@@ -26,6 +27,7 @@ const navItems: NavItem[] = [
   { label: "Live Map", icon: <HiOutlineLocationMarker size={20} />, path: "/live-map" },
   { label: "Reports", icon: <HiOutlineDocumentReport size={20} />, path: "/reports" },
   { label: "Audit Log", icon: <HiOutlineShieldCheck size={20} />, path: "/audit-log" },
+  { label: "App Distribution", icon: <HiOutlineDownload size={20} />, path: "/app-distribution" },
   { label: "Settings", icon: <HiOutlineCog size={20} />, path: "/settings" },
 ];
 
