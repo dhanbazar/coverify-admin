@@ -108,12 +108,14 @@ export function LiveMapPage() {
     return () => { socket?.off('agent:location', handler); };
   }, []);
 
+  const agentList = Array.isArray(agents) ? agents : [];
+
   const counts = useMemo(() => {
-    if (!agents) return { online: 0, idle: 0, offline: 0 };
+    if (!agentList.length) return { online: 0, idle: 0, offline: 0 };
     let online = 0;
     let idle = 0;
     let offline = 0;
-    for (const agent of agents) {
+    for (const agent of agentList) {
       const time = livePositions[agent.id]?.timestamp ?? agent.last_location_at;
       const { status } = getTimeSince(time);
       if (status === 'online') online++;
@@ -121,7 +123,7 @@ export function LiveMapPage() {
       else offline++;
     }
     return { online, idle, offline };
-  }, [agents, livePositions]);
+  }, [agentList, livePositions]);
 
   return (
     <div className="space-y-6">
@@ -159,7 +161,7 @@ export function LiveMapPage() {
         <div className="text-center py-12 text-gray-500">No agent location data available.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {agents.map(agent => (
+          {agentList.map(agent => (
             <AgentLocationCard
               key={agent.id}
               agent={agent}
