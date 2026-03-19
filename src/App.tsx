@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { getStoredAuth } from "./store/authStore";
 import { connectWebSocket, disconnectWebSocket } from "./services/websocket";
 import { AdminLayout } from "./components/layout/AdminLayout";
+import RoleGuard from "./components/RoleGuard";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { CasesPage } from "./pages/CasesPage";
@@ -73,23 +74,59 @@ function App() {
   const renderPage = () => {
     switch (currentPath) {
       case "/":
-        return <DashboardPage />;
+        return (
+          <RoleGuard allowedRoles={["admin", "manager"]}>
+            <DashboardPage />
+          </RoleGuard>
+        );
       case "/cases":
-        return <CasesPage />;
+        return (
+          <RoleGuard allowedRoles={["admin", "manager"]}>
+            <CasesPage />
+          </RoleGuard>
+        );
       case "/agents":
-        return <AgentsPage />;
+        return (
+          <RoleGuard allowedRoles={["admin"]}>
+            <AgentsPage />
+          </RoleGuard>
+        );
       case "/live-map":
-        return <LiveMapPage />;
+        return (
+          <RoleGuard allowedRoles={["admin", "manager"]}>
+            <LiveMapPage />
+          </RoleGuard>
+        );
       case "/reports":
-        return <ReportsPage />;
+        return (
+          <RoleGuard allowedRoles={["admin", "manager"]}>
+            <ReportsPage />
+          </RoleGuard>
+        );
       case "/audit-log":
-        return <AuditLogPage />;
+        return (
+          <RoleGuard allowedRoles={["admin"]}>
+            <AuditLogPage />
+          </RoleGuard>
+        );
       case "/app-distribution":
-        return <AppDistributionPage />;
+        return (
+          <RoleGuard allowedRoles={["admin", "manager"]}>
+            <AppDistributionPage />
+          </RoleGuard>
+        );
       case "/settings":
-        return <SettingsPage />;
+        return (
+          <RoleGuard allowedRoles={["admin"]}>
+            <SettingsPage />
+          </RoleGuard>
+        );
       default:
-        return <DashboardPage />;
+        return (
+          <RoleGuard allowedRoles={["admin", "manager"]}>
+            <DashboardPage />
+          </RoleGuard>
+        );
     }
   };
 
