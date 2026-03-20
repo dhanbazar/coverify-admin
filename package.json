@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@coanfiss/coverify-shared": "file:../coverify-shared",
+    "@coanfiss/coverify-shared": "github:dhanbazar/coverify-shared",
     "@sentry/react": "^10.45.0",
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/react-query": "^5.90.21",
