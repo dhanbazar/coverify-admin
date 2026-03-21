@@ -3,12 +3,9 @@ import { useState } from "react";
 export function AppDistributionPage() {
   const [copied, setCopied] = useState(false);
 
-  // Hardcoded for now — will be dynamic when connected to EAS
   const currentVersion = "1.0.0";
-  const lastBuildDate = "2026-03-18";
-
-  // The APK download URL would come from EAS Build API or S3
-  const apkDownloadUrl = "https://expo.dev/artifacts/eas/your-build-id.apk";
+  const lastBuildDate = "2026-03-20";
+  const apkDownloadUrl = "https://expo.dev/artifacts/eas/hWkcuCbikWENuUqhQ86KhW.apk";
 
   const copyLink = (url: string) => {
     navigator.clipboard.writeText(url);
