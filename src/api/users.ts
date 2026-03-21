@@ -3,14 +3,14 @@ import { apiClient } from "./client";
 export interface User {
   id: string;
   email: string;
-  full_name: string;
+  fullName: string;
   phone: string;
   role: string;
-  assigned_city?: string;
-  employee_id?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  assignedCity?: string;
+  employeeId?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface UsersResponse {

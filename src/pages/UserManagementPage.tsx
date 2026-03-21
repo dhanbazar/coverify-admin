@@ -100,15 +100,15 @@ export function UserManagementPage() {
   }
 
   function handleResetPassword(user: User) {
-    if (window.confirm(`Reset password for ${user.full_name}? A temporary password will be generated.`)) {
+    if (window.confirm(`Reset password for ${user.fullName}? A temporary password will be generated.`)) {
       resetPasswordMutation.mutate(user.id);
     }
   }
 
   function handleToggleActive(user: User) {
-    const action = user.is_active ? "deactivate" : "activate";
-    if (window.confirm(`Are you sure you want to ${action} ${user.full_name}?`)) {
-      if (user.is_active) {
+    const action = user.isActive ? "deactivate" : "activate";
+    if (window.confirm(`Are you sure you want to ${action} ${user.fullName}?`)) {
+      if (user.isActive) {
         deleteMutation.mutate(user.id);
       } else {
         toggleActiveMutation.mutate({ id: user.id, isActive: true });
@@ -228,14 +228,15 @@ export function UserManagementPage() {
                   <td className="px-4 py-3 text-sm">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-semibold text-xs">
-                        {user.full_name
+                        {(user.fullName ?? "")
                           .split(" ")
                           .map((n) => n[0])
+                          .filter(Boolean)
                           .join("")
                           .slice(0, 2)
-                          .toUpperCase()}
+                          .toUpperCase() || "?"}
                       </div>
-                      <span className="text-gray-900 font-medium">{user.full_name}</span>
+                      <span className="text-gray-900 font-medium">{user.fullName}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
@@ -245,17 +246,17 @@ export function UserManagementPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
-                    {user.assigned_city ?? "-"}
+                    {user.assignedCity ?? "-"}
                   </td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                        user.is_active
+                        user.isActive
                           ? "bg-green-100 text-green-700"
                           : "bg-red-100 text-red-700"
                       }`}
                     >
-                      {user.is_active ? "Active" : "Inactive"}
+                      {user.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -276,14 +277,14 @@ export function UserManagementPage() {
                       </button>
                       <button
                         onClick={() => handleToggleActive(user)}
-                        title={user.is_active ? "Deactivate" : "Activate"}
+                        title={user.isActive ? "Deactivate" : "Activate"}
                         className={`px-2 py-1 rounded-lg text-xs font-medium transition-colors ${
-                          user.is_active
+                          user.isActive
                             ? "text-red-600 hover:bg-red-50"
                             : "text-green-600 hover:bg-green-50"
                         }`}
                       >
-                        {user.is_active ? "Deactivate" : "Activate"}
+                        {user.isActive ? "Deactivate" : "Activate"}
                       </button>
                     </div>
                   </td>
@@ -366,11 +367,11 @@ function UserFormModal({
   const [form, setForm] = useState({
     email: user?.email ?? "",
     password: "",
-    fullName: user?.full_name ?? "",
+    fullName: user?.fullName ?? "",
     phone: user?.phone ?? "",
     role: user?.role ?? "agent",
-    assignedCity: user?.assigned_city ?? "",
-    employeeId: user?.employee_id ?? "",
+    assignedCity: user?.assignedCity ?? "",
+    employeeId: user?.employeeId ?? "",
   });
 
   function handleSubmit(e: React.FormEvent) {
