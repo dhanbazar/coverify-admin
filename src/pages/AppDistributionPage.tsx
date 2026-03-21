@@ -5,7 +5,7 @@ export function AppDistributionPage() {
 
   const currentVersion = "1.0.0";
   const lastBuildDate = "2026-03-20";
-  const apkDownloadUrl = "https://expo.dev/artifacts/eas/hWkcuCbikWENuUqhQ86KhW.apk";
+  const apkDownloadUrl = `${import.meta.env.VITE_API_URL || "https://coverify-server-production.up.railway.app"}/download/apk`;
 
   const copyLink = (url: string) => {
     navigator.clipboard.writeText(url);
