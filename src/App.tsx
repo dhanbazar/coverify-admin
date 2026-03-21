@@ -13,6 +13,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { LiveMapPage } from "./pages/LiveMapPage";
 import { AuditLogPage } from "./pages/AuditLogPage";
 import { AppDistributionPage } from "./pages/AppDistributionPage";
+import { UserManagementPage } from "./pages/UserManagementPage";
 import "./index.css";
 
 const queryClient = new QueryClient({
@@ -32,6 +33,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/reports": "Reports",
   "/audit-log": "Audit Log",
   "/app-distribution": "App Distribution",
+  "/users": "User Management",
   "/settings": "Settings",
 };
 
@@ -113,6 +115,12 @@ function App() {
         return (
           <RoleGuard allowedRoles={["admin", "manager"]}>
             <AppDistributionPage />
+          </RoleGuard>
+        );
+      case "/users":
+        return (
+          <RoleGuard allowedRoles={["admin"]}>
+            <UserManagementPage />
           </RoleGuard>
         );
       case "/settings":
