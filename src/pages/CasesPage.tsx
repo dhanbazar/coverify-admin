@@ -117,6 +117,7 @@ export function CasesPage() {
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Type</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">City</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Report</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">TAT</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
             </tr>
@@ -135,6 +136,19 @@ export function CasesPage() {
                     <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${STATUS_STYLES[c.status] ?? "bg-gray-100 text-gray-700"}`}>
                       {c.status.replace("_", " ")}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {c.status === "report_generated" || c.pdfUrl ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                        <HiOutlineDocumentReport size={12} /> Ready
+                      </span>
+                    ) : c.status === "submitted" ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                        Generating...
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
                   </td>
                   <td className={`px-4 py-3 text-sm ${TAT_STYLES[tatStatus]}`}>
                     {formatTimeRemaining(c.deadline)}
