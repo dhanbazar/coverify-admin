@@ -12,6 +12,7 @@ import {
   HiOutlineShieldCheck,
   HiOutlineDownload,
   HiOutlineUserGroup,
+  HiOutlineX,
 } from "react-icons/hi";
 import { clearStoredAuth } from "../../store/authStore";
 
@@ -36,9 +37,10 @@ const navItems: NavItem[] = [
 interface SidebarProps {
   currentPath: string;
   onNavigate: (path: string) => void;
+  onClose?: () => void;
 }
 
-export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
+export function Sidebar({ currentPath, onNavigate, onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   const handleLogout = () => {
@@ -48,20 +50,31 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
 
   return (
     <aside
-      className={`flex flex-col bg-gray-900 text-white transition-all duration-300 ${
+      className={`flex flex-col bg-gray-900 text-white h-full transition-all duration-300 ${
         collapsed ? "w-16" : "w-64"
       }`}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-5 border-b border-gray-800">
-        <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center font-bold text-sm">
-          CV
+      <div className="flex items-center justify-between px-4 py-5 border-b border-gray-800">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center font-bold text-sm shrink-0">
+            CV
+          </div>
+          {!collapsed && <span className="font-bold text-lg">CoVerify</span>}
         </div>
-        {!collapsed && <span className="font-bold text-lg">CoVerify</span>}
+        {/* Close button — mobile only */}
+        {onClose && !collapsed && (
+          <button
+            onClick={onClose}
+            className="lg:hidden p-1 text-gray-400 hover:text-white"
+          >
+            <HiOutlineX size={20} />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4">
+      <nav className="flex-1 py-4 overflow-y-auto">
         {navItems.map((item) => (
           <button
             key={item.path}
@@ -72,7 +85,7 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
                 : "text-gray-400 hover:bg-gray-800 hover:text-white"
             }`}
           >
-            {item.icon}
+            <span className="shrink-0">{item.icon}</span>
             {!collapsed && item.label}
           </button>
         ))}
@@ -87,9 +100,10 @@ export function Sidebar({ currentPath, onNavigate }: SidebarProps) {
           <HiOutlineLogout size={20} />
           {!collapsed && "Sign Out"}
         </button>
+        {/* Collapse toggle — hidden on mobile */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center py-2 text-gray-500 hover:text-white"
+          className="hidden lg:flex w-full items-center justify-center py-2 text-gray-500 hover:text-white"
         >
           {collapsed ? <HiOutlineChevronRight size={16} /> : <HiOutlineChevronLeft size={16} />}
         </button>

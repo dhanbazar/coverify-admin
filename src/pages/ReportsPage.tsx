@@ -189,11 +189,11 @@ export function ReportsPage() {
       </div>
 
       {/* Reports Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
         {isLoading ? (
           <div className="p-8 text-center text-gray-400">Loading reports...</div>
         ) : (
-          <table className="w-full">
+          <table className="w-full min-w-[700px]">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">

@@ -162,11 +162,11 @@ export function AuditLogPage() {
       </div>
 
       {/* Audit Log Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
         {isLoading ? (
           <div className="p-8 text-center text-gray-400">Loading audit logs...</div>
         ) : (
-          <table className="w-full">
+          <table className="w-full min-w-[700px]">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="w-8 px-2 py-3" />
