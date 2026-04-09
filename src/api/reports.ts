@@ -34,5 +34,5 @@ export async function generateReport(caseId: string): Promise<{ id: string; url:
 
 export async function getReportDownloadUrl(caseId: string): Promise<string> {
   const { data } = await apiClient.get(`/reports/${caseId}/download`);
-  return data.data.url;
+  return data.data.downloadUrl ?? data.data.url ?? data.data;
 }
