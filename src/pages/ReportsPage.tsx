@@ -229,14 +229,14 @@ export function ReportsPage() {
               {reports.map((r) => (
                 <tr key={r.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 text-sm font-medium text-indigo-600">
-                    {r.case_display_id ?? r.case_id}
+                    {r.case_number ?? r.case_id}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">
                     {r.applicant_name ?? "-"}
                   </td>
                   <td className="px-4 py-3">
                     <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                      {r.type}
+                      {r.report_type ?? "-"}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -250,25 +250,25 @@ export function ReportsPage() {
                     {r.file_size_bytes ? formatFileSize(r.file_size_bytes) : "-"}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
-                    {r.generator_name ?? r.generated_by}
+                    {r.generated_by ?? "-"}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
-                    {new Date(r.created_at).toLocaleDateString("en-IN", {
+                    {r.generated_at ? new Date(r.generated_at).toLocaleDateString("en-IN", {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",
-                    })}
+                    }) : "-"}
                   </td>
                   <td className="px-4 py-3">
-                    {r.sha256_hash ? (
+                    {(r as any).sha256_hash ? (
                       <button
-                        onClick={() => handleCopyHash(r.sha256_hash)}
+                        onClick={() => handleCopyHash((r as any).sha256_hash)}
                         className="flex items-center gap-1 text-xs text-gray-500 hover:text-indigo-600 font-mono"
                         title="Click to copy full hash"
                       >
-                        {truncateHash(r.sha256_hash)}
+                        {truncateHash((r as any).sha256_hash)}
                         <HiOutlineClipboardCopy size={14} />
-                        {copiedHash === r.sha256_hash && (
+                        {copiedHash === (r as any).sha256_hash && (
                           <span className="text-green-600 ml-1">Copied!</span>
                         )}
                       </button>

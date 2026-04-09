@@ -3,17 +3,15 @@ import { apiClient } from './client';
 export interface ReportMeta {
   id: string;
   case_id: string;
-  type: string;
+  case_number?: string;
+  report_type?: string;
   status: string;
-  remote_url: string;
-  sha256_hash: string;
-  file_size_bytes: number;
-  generated_by: string;
-  created_at: string;
+  file_size_bytes?: number;
+  generated_by?: string;
+  generated_at?: string;
   // Joined fields
-  case_display_id?: string;
   applicant_name?: string;
-  generator_name?: string;
+  client_name?: string;
 }
 
 export async function fetchReports(params: {
@@ -23,7 +21,10 @@ export async function fetchReports(params: {
   search?: string;
 }): Promise<{ reports: ReportMeta[]; total: number }> {
   const { data } = await apiClient.get('/reports', { params });
-  return data.data;
+  // API returns { success, data: [...reports], pagination: { total } }
+  const reports = Array.isArray(data.data) ? data.data : data.data?.reports ?? [];
+  const total = data.pagination?.total ?? reports.length;
+  return { reports, total };
 }
 
 export async function generateReport(caseId: string): Promise<{ id: string; url: string }> {
