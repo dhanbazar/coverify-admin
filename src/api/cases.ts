@@ -40,3 +40,59 @@ export async function downloadReport(caseId: string): Promise<Blob> {
   });
   return data;
 }
+
+export interface CreateCasePayload {
+  clientName: string;
+  applicantName: string;
+  loanType: string;
+  loanReferenceNo: string;
+  verificationType: string;
+  reportType: string;
+  locationCity: string;
+  assignedAgentId: string;
+  deadline?: string;
+  product?: string;
+  clientBranch?: string;
+}
+
+export async function createCase(payload: CreateCasePayload): Promise<string> {
+  const { data } = await apiClient.post("/cases", payload);
+  return data.data?.caseId ?? data.data;
+}
+
+export interface BulkImportRow {
+  client_name: string;
+  applicant_name?: string;
+  loan_type: string;
+  loan_reference_no: string;
+  verification_type: string;
+  report_type: string;
+  location_city: string;
+  agent_email: string;
+  deadline?: string;
+  product?: string;
+  client_branch?: string;
+}
+
+export interface BulkImportResult {
+  imported: number;
+  failed: number;
+  errors: Array<{ row: number; message: string }>;
+}
+
+export async function bulkImportCases(cases: BulkImportRow[]): Promise<BulkImportResult> {
+  const { data } = await apiClient.post("/admin/cases/bulk-import", { cases });
+  return data.data;
+}
+
+export interface AgentOption {
+  id: string;
+  email: string;
+  full_name: string;
+}
+
+export async function fetchAgentsList(): Promise<AgentOption[]> {
+  const { data } = await apiClient.get("/admin/agents");
+  const agents = data.data ?? data;
+  return Array.isArray(agents) ? agents : [];
+}

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { HiOutlineDownload, HiOutlineEye, HiOutlineUpload, HiOutlineDocumentReport } from "react-icons/hi";
+import { HiOutlineDownload, HiOutlineEye, HiOutlineUpload, HiOutlineDocumentReport, HiOutlinePlus } from "react-icons/hi";
 import { fetchAllCases, downloadReport } from "../api/cases";
 import { generateReport } from "../api/reports";
 import { formatTimeRemaining, calculateTatStatus } from "@coanfiss/coverify-shared";
 import { CsvImporter } from "../components/CsvImporter";
+import { CreateCaseModal } from "../components/CreateCaseModal";
 
 const STATUS_STYLES: Record<string, string> = {
   assigned: "bg-blue-100 text-blue-700",
@@ -27,6 +28,7 @@ export function CasesPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [showImporter, setShowImporter] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const generateMutation = useMutation({
     mutationFn: (caseId: string) => generateReport(caseId),
@@ -74,6 +76,13 @@ export function CasesPage() {
           void queryClient.invalidateQueries({ queryKey: ["admin-cases"] });
         }}
       />
+      <CreateCaseModal
+        visible={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={() => {
+          void queryClient.invalidateQueries({ queryKey: ["admin-cases"] });
+        }}
+      />
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
@@ -98,8 +107,15 @@ export function CasesPage() {
           <option value="rejected">Rejected</option>
         </select>
         <button
-          onClick={() => setShowImporter(true)}
+          onClick={() => setShowCreateModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"
+        >
+          <HiOutlinePlus size={16} />
+          Add Case
+        </button>
+        <button
+          onClick={() => setShowImporter(true)}
+          className="flex items-center gap-2 px-4 py-2 border border-indigo-600 text-indigo-600 rounded-lg text-sm font-medium hover:bg-indigo-50"
         >
           <HiOutlineUpload size={16} />
           Bulk Import
