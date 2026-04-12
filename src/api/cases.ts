@@ -60,6 +60,25 @@ export async function createCase(payload: CreateCasePayload): Promise<string> {
   return data.data?.caseId ?? data.data;
 }
 
+export interface UpdateCasePayload {
+  client_name?: string;
+  applicant_name?: string;
+  loan_type?: string;
+  loan_reference_no?: string;
+  verification_type?: string;
+  report_type?: string;
+  location_city?: string;
+  product?: string;
+  client_branch?: string;
+  assigned_agent_id?: string;
+  deadline?: string;
+  status?: string;
+}
+
+export async function updateCase(id: string, payload: UpdateCasePayload): Promise<void> {
+  await apiClient.put(`/admin/cases/${id}`, payload);
+}
+
 export interface BulkImportRow {
   client_name: string;
   applicant_name?: string;

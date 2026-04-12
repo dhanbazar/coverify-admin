@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { HiOutlineDownload, HiOutlineEye, HiOutlineUpload, HiOutlineDocumentReport, HiOutlinePlus } from "react-icons/hi";
+import { HiOutlineDownload, HiOutlineUpload, HiOutlineDocumentReport, HiOutlinePlus, HiOutlinePencil } from "react-icons/hi";
 import { fetchAllCases, downloadReport } from "../api/cases";
 import { generateReport } from "../api/reports";
 import { formatTimeRemaining, calculateTatStatus } from "@coanfiss/coverify-shared";
+import type { CaseListItem } from "@coanfiss/coverify-shared";
 import { CsvImporter } from "../components/CsvImporter";
 import { CreateCaseModal } from "../components/CreateCaseModal";
+import { EditCaseModal } from "../components/EditCaseModal";
 
 const STATUS_STYLES: Record<string, string> = {
   assigned: "bg-blue-100 text-blue-700",
@@ -29,6 +31,7 @@ export function CasesPage() {
   const [page, setPage] = useState(1);
   const [showImporter, setShowImporter] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editCase, setEditCase] = useState<CaseListItem | null>(null);
 
   const generateMutation = useMutation({
     mutationFn: (caseId: string) => generateReport(caseId),
@@ -80,6 +83,14 @@ export function CasesPage() {
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCreated={() => {
+          void queryClient.invalidateQueries({ queryKey: ["admin-cases"] });
+        }}
+      />
+      <EditCaseModal
+        visible={!!editCase}
+        caseData={editCase}
+        onClose={() => setEditCase(null)}
+        onUpdated={() => {
           void queryClient.invalidateQueries({ queryKey: ["admin-cases"] });
         }}
       />
@@ -171,8 +182,12 @@ export function CasesPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <button className="p-1 text-gray-400 hover:text-indigo-600" title="View">
-                        <HiOutlineEye size={18} />
+                      <button
+                        className="p-1 text-gray-400 hover:text-indigo-600"
+                        title="Edit Case"
+                        onClick={() => setEditCase(c)}
+                      >
+                        <HiOutlinePencil size={18} />
                       </button>
                       <button
                         className="p-1 text-gray-400 hover:text-green-600"
