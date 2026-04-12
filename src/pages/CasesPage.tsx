@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { HiOutlineDownload, HiOutlineUpload, HiOutlineDocumentReport, HiOutlinePlus, HiOutlinePencil } from "react-icons/hi";
+import { HiOutlineDownload, HiOutlineUpload, HiOutlineDocumentReport, HiOutlinePlus, HiOutlinePencil, HiOutlineClipboardList } from "react-icons/hi";
 import { fetchAllCases, downloadReport } from "../api/cases";
 import { generateReport } from "../api/reports";
 import { formatTimeRemaining, calculateTatStatus } from "@coanfiss/coverify-shared";
@@ -8,6 +8,7 @@ import type { CaseListItem } from "@coanfiss/coverify-shared";
 import { CsvImporter } from "../components/CsvImporter";
 import { CreateCaseModal } from "../components/CreateCaseModal";
 import { EditCaseModal } from "../components/EditCaseModal";
+import { FormDataModal } from "../components/FormDataModal";
 
 const STATUS_STYLES: Record<string, string> = {
   assigned: "bg-blue-100 text-blue-700",
@@ -32,6 +33,7 @@ export function CasesPage() {
   const [showImporter, setShowImporter] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editCase, setEditCase] = useState<CaseListItem | null>(null);
+  const [formViewCase, setFormViewCase] = useState<CaseListItem | null>(null);
 
   const generateMutation = useMutation({
     mutationFn: (caseId: string) => generateReport(caseId),
@@ -93,6 +95,12 @@ export function CasesPage() {
         onUpdated={() => {
           void queryClient.invalidateQueries({ queryKey: ["admin-cases"] });
         }}
+      />
+      <FormDataModal
+        visible={!!formViewCase}
+        caseId={formViewCase?.id ?? null}
+        caseDisplayId={formViewCase?.caseId ?? ""}
+        onClose={() => setFormViewCase(null)}
       />
 
       {/* Filters */}
@@ -188,6 +196,13 @@ export function CasesPage() {
                         onClick={() => setEditCase(c)}
                       >
                         <HiOutlinePencil size={18} />
+                      </button>
+                      <button
+                        className="p-1 text-gray-400 hover:text-purple-600"
+                        title="View/Edit Form Data"
+                        onClick={() => setFormViewCase(c)}
+                      >
+                        <HiOutlineClipboardList size={18} />
                       </button>
                       <button
                         className="p-1 text-gray-400 hover:text-green-600"
