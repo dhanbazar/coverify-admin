@@ -1,27 +1,96 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { apiClient } from "../api/client";
 
 export function AppDistributionPage() {
   const [copied, setCopied] = useState(false);
+  const [apkUrl, setApkUrl] = useState("");
+  const [newUrl, setNewUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
 
   const currentVersion = "1.0.0";
-  const lastBuildDate = "2026-03-20";
-  const apkDownloadUrl = `${import.meta.env.VITE_API_URL || "https://coverify-server-production.up.railway.app"}/download/apk`;
+  const serverBase = import.meta.env.VITE_API_URL || "https://coverify-server-production.up.railway.app";
+  const apkDownloadUrl = `${serverBase}/download/apk`;
+
+  // Fetch current APK URL from server
+  useEffect(() => {
+    apiClient.get("/settings/apk-url")
+      .then(({ data }) => {
+        const url = data?.data?.url ?? "";
+        setApkUrl(url);
+        setNewUrl(url);
+      })
+      .catch(() => {});
+  }, []);
 
   const copyLink = (url: string) => {
-    navigator.clipboard.writeText(url);
+    void navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleUpdateUrl = async () => {
+    if (!newUrl.trim()) return;
+    setSaving(true);
+    setSaveMsg("");
+    try {
+      await apiClient.put("/settings/apk-url", { url: newUrl.trim() });
+      setApkUrl(newUrl.trim());
+      setSaveMsg("APK URL updated successfully!");
+      setTimeout(() => setSaveMsg(""), 3000);
+    } catch {
+      setSaveMsg("Failed to update URL");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <div className="p-6 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-2">App Distribution</h1>
-      <p className="text-gray-500 mb-8">
-        Manage and distribute the CoVerify mobile app to field agents
-      </p>
+    <div className="max-w-4xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">App Distribution</h1>
+        <p className="text-gray-500 text-sm mt-1">Manage and distribute the CoVerify mobile app to field agents</p>
+      </div>
+
+      {/* Update APK URL */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-6">
+        <h2 className="text-lg font-semibold mb-1">APK Build URL</h2>
+        <p className="text-gray-500 text-sm mb-4">
+          Paste the EAS build URL here after each new APK build. Agents will always get the latest version.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="url"
+            value={newUrl}
+            onChange={(e) => setNewUrl(e.target.value)}
+            placeholder="https://expo.dev/artifacts/eas/xxxxx.apk"
+            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <button
+            onClick={() => void handleUpdateUrl()}
+            disabled={saving || !newUrl.trim() || newUrl.trim() === apkUrl}
+            className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 whitespace-nowrap"
+          >
+            {saving ? "Saving..." : "Update URL"}
+          </button>
+        </div>
+
+        {saveMsg && (
+          <p className={`mt-2 text-sm ${saveMsg.includes("success") ? "text-green-600" : "text-red-600"}`}>
+            {saveMsg}
+          </p>
+        )}
+
+        {apkUrl && (
+          <p className="mt-3 text-xs text-gray-400 break-all">
+            Current: {apkUrl}
+          </p>
+        )}
+      </div>
 
       {/* Current Version Card */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+      <div className="bg-white border border-gray-200 rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold">Current Release</h2>
@@ -38,8 +107,8 @@ export function AppDistributionPage() {
             <p className="font-medium">Android</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-3">
-            <p className="text-xs text-gray-500">Build Date</p>
-            <p className="font-medium">{lastBuildDate}</p>
+            <p className="text-xs text-gray-500">Distribution</p>
+            <p className="font-medium">Direct APK</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-3">
             <p className="text-xs text-gray-500">Size</p>
@@ -51,9 +120,9 @@ export function AppDistributionPage() {
           </div>
         </div>
 
-        {/* Download Link Section */}
+        {/* Download Link */}
         <div className="border border-gray-200 rounded-xl p-4 mb-4">
-          <p className="text-sm font-medium mb-2">APK Download Link</p>
+          <p className="text-sm font-medium mb-2">Agent Download Link</p>
           <div className="flex gap-2">
             <input
               readOnly
@@ -64,12 +133,14 @@ export function AppDistributionPage() {
               onClick={() => copyLink(apkDownloadUrl)}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition"
             >
-              {copied ? "Copied" : "Copy Link"}
+              {copied ? "Copied!" : "Copy"}
             </button>
           </div>
+          <p className="text-xs text-gray-400 mt-2">
+            Share this link with agents — it always redirects to the latest APK.
+          </p>
         </div>
 
-        {/* Direct Download */}
         <a
           href={apkDownloadUrl}
           target="_blank"
@@ -80,18 +151,16 @@ export function AppDistributionPage() {
         </a>
       </div>
 
-      {/* Share with Agents Section */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+      {/* Share with Agents */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-6">
         <h2 className="text-lg font-semibold mb-4">Share with Agents</h2>
-        <p className="text-gray-500 text-sm mb-4">
-          Send the download link to agents via WhatsApp or Email
-        </p>
+        <p className="text-gray-500 text-sm mb-4">Send the download link to agents via WhatsApp or Email</p>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={() => {
               const msg = encodeURIComponent(
-                `Install CoVerify App\n\nDownload the latest version:\n${apkDownloadUrl}\n\nVersion: v${currentVersion}\n\nAfter installing, login with your credentials provided by your manager.`,
+                `Install CoVerify App\n\nDownload the latest version:\n${apkDownloadUrl}\n\nVersion: v${currentVersion}\n\nAfter installing, login with your credentials.`,
               );
               window.open(`https://wa.me/?text=${msg}`, "_blank");
             }}
@@ -104,7 +173,7 @@ export function AppDistributionPage() {
             onClick={() => {
               const subject = encodeURIComponent("Install CoVerify App");
               const body = encodeURIComponent(
-                `Hi,\n\nPlease download and install the CoVerify field verification app:\n\n${apkDownloadUrl}\n\nVersion: v${currentVersion}\n\nInstallation steps:\n1. Click the download link\n2. Allow "Install from unknown sources" if prompted\n3. Install the APK\n4. Open CoVerify and login with your credentials\n\nRegards,\nCoVerify Admin`,
+                `Hi,\n\nPlease download the CoVerify app:\n\n${apkDownloadUrl}\n\nVersion: v${currentVersion}\n\nSteps:\n1. Click the download link\n2. Allow "Install from unknown sources"\n3. Install and login with your credentials\n\nRegards,\nCoVerify Admin`,
               );
               window.open(`mailto:?subject=${subject}&body=${body}`, "_blank");
             }}
@@ -123,61 +192,26 @@ export function AppDistributionPage() {
       </div>
 
       {/* Installation Guide */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">
-          Installation Guide for Agents
-        </h2>
-        <div className="space-y-3">
-          {[
-            {
-              step: 1,
-              text: "Click the APK download link shared by your manager",
-            },
-            {
-              step: 2,
-              text: 'If prompted, go to Settings > Security > Enable "Install from Unknown Sources"',
-            },
-            {
-              step: 3,
-              text: 'Open the downloaded APK file and tap "Install"',
-            },
-            {
-              step: 4,
-              text: "Open CoVerify and login with your email and password",
-            },
-            {
-              step: 5,
-              text: "Grant permissions for Camera, Location, and Notifications when asked",
-            },
-            {
-              step: 6,
-              text: "You're ready! Your assigned cases will appear on the dashboard",
-            },
-          ].map(({ step, text }) => (
-            <div key={step} className="flex items-start gap-3">
-              <span className="bg-indigo-100 text-indigo-700 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
-                {step}
-              </span>
-              <p className="text-gray-700">{text}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* OTA Updates Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-        <h2 className="text-lg font-semibold text-blue-900 mb-2">
-          Over-the-Air Updates
-        </h2>
-        <p className="text-blue-700 text-sm mb-3">
-          After the initial APK install, all future updates are delivered
-          automatically via OTA. Agents don&apos;t need to re-download the APK
-          for code updates — they&apos;ll get a prompt to restart the app.
-        </p>
-        <div className="bg-white/50 rounded-xl p-3 font-mono text-sm text-blue-800">
-          npx eas update --branch production --message &quot;Your update
-          message&quot;
-        </div>
+      <div className="bg-white border border-gray-200 rounded-2xl p-6">
+        <h2 className="text-lg font-semibold mb-4">Installation Guide</h2>
+        <ol className="space-y-3 text-sm text-gray-700">
+          <li className="flex gap-3">
+            <span className="flex-shrink-0 w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+            <span>Open the download link on your Android phone</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex-shrink-0 w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+            <span>If prompted, allow <strong>"Install from unknown sources"</strong> in Settings</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex-shrink-0 w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+            <span>Tap the downloaded APK file to install</span>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex-shrink-0 w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+            <span>Open CoVerify and login with credentials from your manager</span>
+          </li>
+        </ol>
       </div>
     </div>
   );
