@@ -26,9 +26,10 @@ export function Header({ title, onMenuToggle }: HeaderProps) {
         {/* Hamburger — mobile only */}
         <button
           onClick={onMenuToggle}
-          className="lg:hidden p-2 -ml-1 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+          className="lg:hidden p-3 -ml-2 text-gray-700 active:bg-gray-200 rounded-lg"
+          style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
         >
-          <HiOutlineMenu size={22} />
+          <HiOutlineMenu size={24} />
         </button>
         <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{title}</h1>
       </div>

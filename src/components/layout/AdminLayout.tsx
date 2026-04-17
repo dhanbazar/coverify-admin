@@ -29,9 +29,10 @@ export function AdminLayout({ children, title, currentPath, onNavigate }: AdminL
 
       {/* Sidebar — hidden on mobile, shown on lg+ */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-auto transition-transform duration-300 ${
+        className={`fixed inset-y-0 left-0 z-50 lg:static lg:z-auto transition-transform duration-300 will-change-transform ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
+        style={{ WebkitTransform: mobileMenuOpen ? 'translateX(0)' : undefined }}
       >
         <Sidebar
           currentPath={currentPath}
