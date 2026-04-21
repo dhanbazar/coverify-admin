@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, Legend,
 } from "recharts";
-import { HiOutlineBriefcase, HiOutlineClock, HiOutlineUsers, HiOutlineExclamation } from "react-icons/hi";
+import { HiOutlineBriefcase, HiOutlineClock, HiOutlineUsers, HiOutlineExclamation, HiOutlineUserGroup } from "react-icons/hi";
 import { fetchDashboardStats, fetchCaseTrends, fetchAgentPerformance } from "../api/dashboard";
 import { getSocket, connectWebSocket } from "../services/websocket";
 
@@ -82,6 +82,7 @@ export function DashboardPage() {
     tatBreachRate: 0,
     activeAgents: 0,
     pendingReview: 0,
+    unassignedCases: 0,
   };
 
   const displayTrends = trends ?? [];
@@ -98,6 +99,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Cases" value={displayStats.totalCases} icon={<HiOutlineBriefcase size={24} />} color="#5B4FCF" />
         <StatCard label="Active Cases" value={displayStats.activeCases} icon={<HiOutlineClock size={24} />} color="#F59E0B" />
+        <StatCard label="Unassigned" value={displayStats.unassignedCases} icon={<HiOutlineUserGroup size={24} />} color="#D97706" />
         <StatCard label="Active Agents" value={displayStats.activeAgents} icon={<HiOutlineUsers size={24} />} color="#10B981" />
         <StatCard label="Pending Review" value={displayStats.pendingReview} icon={<HiOutlineExclamation size={24} />} color="#EF4444" />
       </div>
