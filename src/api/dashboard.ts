@@ -8,6 +8,7 @@ export interface DashboardStats {
   tatBreachRate: number;
   activeAgents: number;
   pendingReview: number;
+  unassignedCases: number;
 }
 
 export interface CaseTrend {
