@@ -21,13 +21,13 @@ interface CsvRow {
 
 const EXPECTED_COLUMNS = [
   "client_name", "applicant_name", "loan_type", "loan_reference_no",
-  "verification_type", "report_type", "location_city", "agent_email",
+  "verification_type", "report_type", "location_city",
   "deadline", "product", "client_branch",
 ];
 
 const REQUIRED_COLUMNS = [
   "client_name", "loan_type", "loan_reference_no",
-  "verification_type", "report_type", "location_city", "agent_email",
+  "verification_type", "report_type", "location_city",
 ];
 
 function parseCsv(text: string): { headers: string[]; rows: CsvRow[] } {
@@ -59,10 +59,6 @@ function validateRows(rows: CsvRow[]): string[] {
       if (!row[col]?.trim()) {
         errors.push(`Row ${rowNum}: "${col}" is required`);
       }
-    }
-    const email = row.agent_email?.trim();
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.push(`Row ${rowNum}: Invalid email "${email}"`);
     }
   });
   return errors;
@@ -149,7 +145,6 @@ export function CsvImporter({ visible, onClose, onImportComplete }: CsvImporterP
         verification_type: row.verification_type?.trim() ?? "",
         report_type: row.report_type?.trim() ?? "",
         location_city: row.location_city?.trim() ?? "",
-        agent_email: row.agent_email?.trim() ?? "",
         deadline: row.deadline?.trim() || undefined,
         product: row.product?.trim() || undefined,
         client_branch: row.client_branch?.trim() || undefined,
@@ -188,11 +183,19 @@ export function CsvImporter({ visible, onClose, onImportComplete }: CsvImporterP
           {results && (
             <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-2">
               <h3 className="text-sm font-semibold text-gray-700">Import Results</h3>
-              <div className="flex gap-4 text-sm">
+              <div className="flex flex-wrap gap-4 text-sm">
                 <span className="text-green-600 font-medium">
                   <HiOutlineCheckCircle className="inline mr-1" size={16} />
                   {results.imported} imported
                 </span>
+                <span className="text-indigo-600 font-medium">
+                  {results.autoAssigned} auto-assigned
+                </span>
+                {results.unassigned > 0 && (
+                  <span className="text-amber-600 font-medium">
+                    {results.unassigned} unassigned (no agent in city)
+                  </span>
+                )}
                 <span className="text-red-600 font-medium">{results.failed} failed</span>
               </div>
               {results.errors.length > 0 && (
