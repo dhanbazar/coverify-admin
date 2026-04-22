@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { HiOutlineDownload, HiOutlineUpload, HiOutlineDocumentReport, HiOutlinePlus, HiOutlinePencil, HiOutlineClipboardList } from "react-icons/hi";
 import { fetchAllCases, downloadReport } from "../api/cases";
+import { fetchDashboardStats } from "../api/dashboard";
 import { generateReport } from "../api/reports";
 import { formatTimeRemaining, calculateTatStatus } from "@coanfiss/coverify-shared";
 import type { CaseListItem } from "@coanfiss/coverify-shared";
@@ -11,6 +12,7 @@ import { EditCaseModal } from "../components/EditCaseModal";
 import { FormDataModal } from "../components/FormDataModal";
 
 const STATUS_STYLES: Record<string, string> = {
+  unassigned: "bg-amber-100 text-amber-700",
   assigned: "bg-blue-100 text-blue-700",
   in_progress: "bg-amber-100 text-amber-700",
   submitted: "bg-green-100 text-green-700",
@@ -46,6 +48,13 @@ export function CasesPage() {
     queryKey: ["admin-cases", statusFilter, search, page],
     queryFn: () => fetchAllCases({ status: statusFilter || undefined, search: search || undefined, page, pageSize: 20 }),
   });
+
+  const { data: stats } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: fetchDashboardStats,
+    staleTime: 30_000,
+  });
+  const unassignedCount = stats?.unassignedCases ?? 0;
 
   // Mock data for display
   const mockCases = data?.items ?? [
@@ -103,6 +112,21 @@ export function CasesPage() {
         onClose={() => setFormViewCase(null)}
       />
 
+      {/* Unassigned alert */}
+      {unassignedCount > 0 && statusFilter !== "unassigned" && (
+        <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <span>
+            {unassignedCount} case{unassignedCount === 1 ? "" : "s"} need{unassignedCount === 1 ? "s" : ""} assignment.
+          </span>
+          <button
+            onClick={() => setStatusFilter("unassigned")}
+            className="font-semibold underline"
+          >
+            View all →
+          </button>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
         <input
@@ -118,6 +142,7 @@ export function CasesPage() {
           className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="">All Statuses</option>
+          <option value="unassigned">Unassigned</option>
           <option value="assigned">Assigned</option>
           <option value="in_progress">In Progress</option>
           <option value="submitted">Submitted</option>

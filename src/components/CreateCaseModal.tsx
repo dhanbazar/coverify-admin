@@ -59,19 +59,33 @@ export function CreateCaseModal({ visible, onClose, onCreated }: Props) {
     e.preventDefault();
     setError("");
 
-    if (!form.clientName || !form.loanReferenceNo || !form.locationCity || !form.assignedAgentId) {
+    if (!form.clientName || !form.loanReferenceNo || !form.locationCity) {
       setError("Please fill all required fields");
       return;
     }
 
     setLoading(true);
     try {
-      await createCase({
+      const result = await createCase({
         ...form,
+        assignedAgentId: form.assignedAgentId || undefined,  // empty → auto-assign
         deadline: form.deadline || undefined,
         product: form.product || undefined,
         clientBranch: form.clientBranch || undefined,
       });
+
+      // Surface the outcome so the admin knows whether auto-assign landed.
+      // No toast library is wired into this app yet; use window.alert until one is.
+      if (result.status === "unassigned") {
+        window.alert(
+          `Case ${result.caseId} created — no agent available in ${form.locationCity}. Moved to Unassigned queue.`,
+        );
+      } else if (result.assignedTo && !form.assignedAgentId) {
+        window.alert(
+          `Case ${result.caseId} auto-assigned to ${result.assignedTo.fullName}.`,
+        );
+      }
+
       onCreated();
       onClose();
       // Reset form
@@ -206,18 +220,20 @@ export function CreateCaseModal({ visible, onClose, onCreated }: Props) {
 
             {/* Assigned Agent */}
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Assign to Agent *</label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Assign to Agent</label>
               <select
-                value={form.assignedAgentId}
+                value={form.assignedAgentId ?? ""}
                 onChange={(e) => update("assignedAgentId", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
               >
-                <option value="">Select agent...</option>
+                <option value="">— Auto-assign (nearest available) —</option>
                 {(agents ?? []).map((a) => (
                   <option key={a.id} value={a.id}>{a.full_name} ({a.email})</option>
                 ))}
               </select>
+              <p className="text-xs text-gray-400 mt-1">
+                Leave on "Auto-assign" to let the system pick the least-loaded agent in {form.locationCity || "the selected city"}.
+              </p>
             </div>
 
             {/* Deadline */}

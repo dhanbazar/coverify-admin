@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   HiOutlineHome,
   HiOutlineBriefcase,
@@ -15,6 +16,8 @@ import {
   HiOutlineX,
 } from "react-icons/hi";
 import { clearStoredAuth } from "../../store/authStore";
+import { fetchDashboardStats } from "../../api/dashboard";
+import { getSocket, connectWebSocket } from "../../services/websocket";
 
 interface NavItem {
   label: string;
@@ -42,6 +45,36 @@ interface SidebarProps {
 
 export function Sidebar({ currentPath, onNavigate, onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+
+  // Unassigned-cases badge on the "Cases" nav item
+  const { data: stats } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: fetchDashboardStats,
+    staleTime: 30_000,
+  });
+  const [unassignedCount, setUnassignedCount] = useState(0);
+  useEffect(() => {
+    setUnassignedCount(stats?.unassignedCases ?? 0);
+  }, [stats?.unassignedCases]);
+
+  useEffect(() => {
+    let socket = getSocket();
+    if (!socket) {
+      try {
+        socket = connectWebSocket();
+      } catch {
+        return;
+      }
+    }
+    const onUnassigned = () => setUnassignedCount((c) => c + 1);
+    const onAssignedChanged = () => setUnassignedCount((c) => Math.max(0, c - 1));
+    socket.on("case:unassigned", onUnassigned);
+    socket.on("case:assigned_changed", onAssignedChanged);
+    return () => {
+      socket?.off("case:unassigned", onUnassigned);
+      socket?.off("case:assigned_changed", onAssignedChanged);
+    };
+  }, []);
 
   const handleLogout = () => {
     clearStoredAuth();
@@ -75,20 +108,37 @@ export function Sidebar({ currentPath, onNavigate, onClose }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto">
-        {navItems.map((item) => (
-          <button
-            key={item.path}
-            onClick={() => onNavigate(item.path)}
-            className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
-              currentPath === item.path
-                ? "bg-indigo-600 text-white"
-                : "text-gray-400 hover:bg-gray-800 hover:text-white"
-            }`}
-          >
-            <span className="shrink-0">{item.icon}</span>
-            {!collapsed && item.label}
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const showBadge = item.path === "/cases" && unassignedCount > 0;
+          return (
+            <button
+              key={item.path}
+              onClick={() => onNavigate(item.path)}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+                currentPath === item.path
+                  ? "bg-indigo-600 text-white"
+                  : "text-gray-400 hover:bg-gray-800 hover:text-white"
+              }`}
+            >
+              <span className="shrink-0 relative">
+                {item.icon}
+                {showBadge && collapsed && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />
+                )}
+              </span>
+              {!collapsed && (
+                <span className="flex-1 flex items-center justify-between">
+                  <span>{item.label}</span>
+                  {showBadge && (
+                    <span className="ml-2 rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white">
+                      {unassignedCount > 99 ? "99+" : unassignedCount}
+                    </span>
+                  )}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Bottom */}

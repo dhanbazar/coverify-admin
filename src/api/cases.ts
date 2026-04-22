@@ -49,15 +49,26 @@ export interface CreateCasePayload {
   verificationType: string;
   reportType: string;
   locationCity: string;
-  assignedAgentId: string;
+  assignedAgentId?: string;   // omit to auto-assign on the server
   deadline?: string;
   product?: string;
   clientBranch?: string;
 }
 
-export async function createCase(payload: CreateCasePayload): Promise<string> {
+export interface CreateCaseResponse {
+  id: string;
+  caseId: string;
+  assignedAgentId: string | null;
+  assignedTo: { id: string; fullName: string } | null;
+  status: "assigned" | "unassigned";
+  assignmentReason: string | null;
+}
+
+export async function createCase(
+  payload: CreateCasePayload,
+): Promise<CreateCaseResponse> {
   const { data } = await apiClient.post("/cases", payload);
-  return data.data?.caseId ?? data.data;
+  return data.data as CreateCaseResponse;
 }
 
 export interface UpdateCasePayload {
@@ -87,7 +98,9 @@ export interface BulkImportRow {
   verification_type: string;
   report_type: string;
   location_city: string;
-  agent_email: string;
+  // agent_email is no longer required or used — server auto-assigns every row.
+  // Kept optional so pre-existing CSVs with this column still parse.
+  agent_email?: string;
   deadline?: string;
   product?: string;
   client_branch?: string;
@@ -96,6 +109,8 @@ export interface BulkImportRow {
 export interface BulkImportResult {
   imported: number;
   failed: number;
+  autoAssigned: number;
+  unassigned: number;
   errors: Array<{ row: number; message: string }>;
 }
 
